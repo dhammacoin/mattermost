@@ -10,26 +10,16 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.22'
-
-      - name: Total Injection
-        run: |
-          # Создаем файл-заглушку один раз
-          echo 'package model' > samantha_fix.go
-          echo 'type ReviewerIDsSettings struct {' >> samantha_fix.go
-          echo '    ReviewerIDs    []string `json:"reviewer_ids"`' >> samantha_fix.go
-          echo '    ReviewerGroups []string `json:"reviewer_groups"`' >> samantha_fix.go
-          echo '}' >> samantha_fix.go
-
-          # Копируем его во ВСЕ папки model, которые найдем в проекте
-          find . -type d -name "model" -exec cp samantha_fix.go {}/samantha_fix.go \;
-          
-          # Для проверки выведем, куда мы его положили
-          find . -name "samantha_fix.go"
+          go-version: '1.24.6' # Соответствует твоему go.mod
 
       - name: Build Mattermost
         run: |
           cd server
-          # Принудительно отключаем использование модулей из кэша, собираем из локальных исходников
-          GOOS=linux GOARCH=amd64 go build -mod=vendor -tags 'team,production' -v -o ../mattermost_samantha ./cmd/mattermost || \
-          GOOS=linux GOARCH=amd64 go build -tags 'team,production' -v -o ../mattermost_samantha ./cmd/mattermost
+          go mod tidy
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -tags 'team,production' -v -o ../mattermost_samantha ./cmd/mattermost
+
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: mattermost_samantha
+          path: mattermost_samantha
