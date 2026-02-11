@@ -14,7 +14,7 @@ import (
 	"github.com/mattermost/mattermost/server/public/shared/mlog"
 	"github.com/mattermost/mattermost/server/public/shared/request"
 )
-
+// Samantha Fix: Inline definition to bypass Enterprise dependency
 type StoreResult[T any] struct {
 	Data T
 

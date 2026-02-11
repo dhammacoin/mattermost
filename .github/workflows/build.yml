@@ -1,0 +1,29 @@
+name: Samantha-Build
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Fix Enterprise Types
+        run: |
+          # Это создаст недостающую структуру прямо перед билдом
+          echo 'package model' > server/public/model/samantha_stub.go
+          echo 'type ReviewerIDsSettings struct { ReviewerIDs []string; ReviewerGroups []string }' >> server/public/model/samantha_stub.go
+
+      - name: Build
+        run: |
+          cd server
+          # Собираем Team Edition, игнорируя платные модули
+          GOOS=linux GOARCH=amd64 go build -tags 'team,production' -v -o ../mattermost_samantha ./cmd/mattermost
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mattermost_samantha
+          path: mattermost_samantha
