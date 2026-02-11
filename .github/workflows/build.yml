@@ -13,20 +13,17 @@ jobs:
           go-version: '1.22'
           cache: false # Отключаем кэш, чтобы избежать старых ошибок
 
-      - name: Inject Samantha Stub
+      - name: Force Inject Enterprise Types
         run: |
-          # Создаем папку вглубине структуры
-          mkdir -p server/public/model
-          # Генерируем файл напрямую
-          cat <<EOF > server/public/model/samantha_stub.go
-          package model
-          type ReviewerIDsSettings struct {
-              ReviewerIDs    []string \`json:"reviewer_ids"\`
-              ReviewerGroups []string \`json:"reviewer_groups"\`
-          }
-          EOF
-          # Проверяем, что файл на месте (увидим в логах)
-          ls -R server/public/model/
+          # Переходим туда, где лежат модели
+          cd server/public/model
+          
+          # Вставляем структуру прямо в существующий файл config.go
+          # Мы добавляем её в конец файла. config.go есть в любой версии Mattermost.
+          echo -e "\ntype ReviewerIDsSettings struct {\n    ReviewerIDs    []string \`json:\"reviewer_ids\"\` \n    ReviewerGroups []string \`json:\"reviewer_groups\"\` \n}" >> config.go
+          
+          # Проверяем, что оно там появилось (для логов)
+          tail -n 10 config.go
 
       - name: Build Mattermost
         run: |
