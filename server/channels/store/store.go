@@ -14,6 +14,11 @@ import (
 	"github.com/mattermost/mattermost/server/public/shared/mlog"
 	"github.com/mattermost/mattermost/server/public/shared/request"
 )
+// Samantha Fix
+type ReviewerIDsSettings struct {
+    ReviewerIDs    []string `json:"reviewer_ids"`
+    ReviewerGroups []string `json:"reviewer_groups"`
+}
 // Samantha Fix: Inline definition to bypass Enterprise dependency
 type StoreResult[T any] struct {
 	Data T
@@ -1150,9 +1155,10 @@ type AttributesStore interface {
 }
 
 type ContentFlaggingStore interface {
-	SaveReviewerSettings(reviewerSettings model.ReviewerIDsSettings) error
-	GetReviewerSettings() (*model.ReviewerIDsSettings, error)
-	ClearCaches()
+    // Убираем "model." перед названием структуры
+    SaveReviewerSettings(reviewerSettings ReviewerIDsSettings) error
+    GetReviewerSettings() (*ReviewerIDsSettings, error)
+    ClearCaches()
 }
 
 // ChannelSearchOpts contains options for searching channels.
