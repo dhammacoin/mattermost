@@ -6,32 +6,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
           go-version: '1.24.6'
 
-      - name: Prepare Local Model
+      - name: Hard-Inject Stub
         run: |
-          cd server
-          # Создаем папку, на которую ссылается go.mod
-          mkdir -p public/model
-          # Генерируем файл-заглушку
-          cat <<EOF > public/model/samantha_stub.go
-          package model
-          type ReviewerIDsSettings struct {
-              ReviewerIDs    []string \`json:"reviewer_ids"\`
-              ReviewerGroups []string \`json:"reviewer_groups"\`
-          }
-          EOF
-          echo "Stub created in server/public/model/"
+          # Вставляем тип прямо в существующий официальный файл модели
+          # Это гарантирует, что тип будет виден всем частям сервера
+          cd server/public/model
+          echo -e "\ntype ReviewerIDsSettings struct {\n    ReviewerIDs    []string \`json:\"reviewer_ids\"\` \n    ReviewerGroups []string \`json:\"reviewer_groups\"\` \n}" >> config.go
+          echo "Stub injected into config.go"
 
-      - name: Build Mattermost
+      - name: Build
         run: |
           cd server
-          # Мы НЕ делаем go mod tidy, чтобы он не удалил наши replace
-          # Собираем напрямую
+          # Собираем напрямую, игнорируя попытки go mod tidy удалить наши правки
           CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -tags 'team,production' -v -o ../mattermost_samantha ./cmd/mattermost
 
       - name: Upload
