@@ -6,27 +6,35 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      
+      - name: Set up Go
+        uses: actions/setup-go@v5
         with:
           go-version: '1.22'
+          cache: false # Отключаем кэш, чтобы избежать старых ошибок
 
-      - name: Fix Enterprise Types
+      - name: Inject Samantha Stub
         run: |
-          # Создаем директорию, если её нет
+          # Создаем папку вглубине структуры
           mkdir -p server/public/model
-          # Записываем заглушку
-          echo 'package model' > server/public/model/samantha_stub.go
-          echo 'type ReviewerIDsSettings struct { ReviewerIDs []string; ReviewerGroups []string }' >> server/public/model/samantha_stub.go
-          # Проверяем для отладки, что файл создался
-          ls -l server/public/model/samantha_stub.go
-          
-      - name: Build
+          # Генерируем файл напрямую
+          cat <<EOF > server/public/model/samantha_stub.go
+          package model
+          type ReviewerIDsSettings struct {
+              ReviewerIDs    []string \`json:"reviewer_ids"\`
+              ReviewerGroups []string \`json:"reviewer_groups"\`
+          }
+          EOF
+          # Проверяем, что файл на месте (увидим в логах)
+          ls -R server/public/model/
+
+      - name: Build Mattermost
         run: |
           cd server
-          # Собираем Team Edition, игнорируя платные модули
-          GOOS=linux GOARCH=amd64 go build -tags 'team,production' -v -o ../mattermost_samantha ./cmd/mattermost
+          # Запускаем сборку с отключенным CGO для надежности
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -tags 'team,production' -v -o ../mattermost_samantha ./cmd/mattermost
 
-      - name: Upload Artifact
+      - name: Upload
         uses: actions/upload-artifact@v4
         with:
           name: mattermost_samantha
