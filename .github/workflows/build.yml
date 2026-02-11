@@ -12,10 +12,14 @@ jobs:
 
       - name: Fix Enterprise Types
         run: |
-          # Это создаст недостающую структуру прямо перед билдом
+          # Создаем директорию, если её нет
+          mkdir -p server/public/model
+          # Записываем заглушку
           echo 'package model' > server/public/model/samantha_stub.go
           echo 'type ReviewerIDsSettings struct { ReviewerIDs []string; ReviewerGroups []string }' >> server/public/model/samantha_stub.go
-
+          # Проверяем для отладки, что файл создался
+          ls -l server/public/model/samantha_stub.go
+          
       - name: Build
         run: |
           cd server
