@@ -6,33 +6,30 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
           go-version: '1.22'
-          cache: false # Отключаем кэш, чтобы избежать старых ошибок
 
-      - name: Force Inject Enterprise Types
+      - name: Total Injection
         run: |
-          # Переходим туда, где лежат модели
-          cd server/public/model
+          # Создаем файл-заглушку один раз
+          echo 'package model' > samantha_fix.go
+          echo 'type ReviewerIDsSettings struct {' >> samantha_fix.go
+          echo '    ReviewerIDs    []string `json:"reviewer_ids"`' >> samantha_fix.go
+          echo '    ReviewerGroups []string `json:"reviewer_groups"`' >> samantha_fix.go
+          echo '}' >> samantha_fix.go
+
+          # Копируем его во ВСЕ папки model, которые найдем в проекте
+          find . -type d -name "model" -exec cp samantha_fix.go {}/samantha_fix.go \;
           
-          # Вставляем структуру прямо в существующий файл config.go
-          # Мы добавляем её в конец файла. config.go есть в любой версии Mattermost.
-          echo -e "\ntype ReviewerIDsSettings struct {\n    ReviewerIDs    []string \`json:\"reviewer_ids\"\` \n    ReviewerGroups []string \`json:\"reviewer_groups\"\` \n}" >> config.go
-          
-          # Проверяем, что оно там появилось (для логов)
-          tail -n 10 config.go
+          # Для проверки выведем, куда мы его положили
+          find . -name "samantha_fix.go"
 
       - name: Build Mattermost
         run: |
           cd server
-          # Запускаем сборку с отключенным CGO для надежности
-          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -tags 'team,production' -v -o ../mattermost_samantha ./cmd/mattermost
-
-      - name: Upload
-        uses: actions/upload-artifact@v4
-        with:
-          name: mattermost_samantha
-          path: mattermost_samantha
+          # Принудительно отключаем использование модулей из кэша, собираем из локальных исходников
+          GOOS=linux GOARCH=amd64 go build -mod=vendor -tags 'team,production' -v -o ../mattermost_samantha ./cmd/mattermost || \
+          GOOS=linux GOARCH=amd64 go build -tags 'team,production' -v -o ../mattermost_samantha ./cmd/mattermost
